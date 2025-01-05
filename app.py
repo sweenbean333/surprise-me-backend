@@ -9,14 +9,14 @@ load_dotenv()
 client = OpenAI()
 
 def generate_user_message(city: str, state: str, participants: int, duration: int, max_price: int, number_of_activities = 1):
-    message = f"""Give me {number_of_activities} {"activities" if number_of_activities > 1 else "activity"} that I can do in {city}, {state} that consists of {participants} {"person" if participants == 1 else "people"} for a maximum of {duration} {"hour" if duration == 1 else "hours"} that costs less than ${max_price} per person.
+    message = f"""Give me a list of {number_of_activities} {"different activities" if number_of_activities > 1 else "activity"} that I can do in {city}, {state} that consists of {participants} {"person" if participants == 1 else "people"} for a maximum of {duration} {"hour" if duration == 1 else "hours"} that costs no more than ${max_price} per person.
     For each activity please provide a title (less than 5 words), description (less then 20 words), duration (in hours), cost (USD), name of location, the address for the activity, and a website URL for the activity."""
     return message
 
 developer_message = "You are an expert event planner."
 user_message1 = generate_user_message("Baltimore", "Maryland", 2, 2, 20)
 user_message2 = generate_user_message("Denver", "Colorado", 2, 2, 50, 3)
-user_message3 = generate_user_message("York", "Pennsylvania", 2, 2, 50, 3)
+user_message3 = generate_user_message("York", "Pennsylvania", 2, 2, 20, 3)
 
 
 # Pydantic Address class for OpenAI structured output
@@ -37,15 +37,18 @@ class Activity(BaseModel):
     address : Address
     websiteUrl : str 
 
+class Activities(BaseModel):
+    activities : list[Activity]
+
 completion = client.beta.chat.completions.parse(
-model= "gpt-4o-mini",
-messages= [
-    {"role" : "developer", "content" : developer_message},
-    {"role" : "user", "content": user_message1}
-],
-response_format= Activity
+    model= "gpt-4o-mini",
+    messages= [
+        {"role" : "developer", "content" : developer_message},
+        {"role" : "user", "content": user_message3},
+    ],
+    response_format= Activities
 )
-print(completion)
+# print(completion)
 activities = completion.choices[0].message.parsed
 print(activities)
 
